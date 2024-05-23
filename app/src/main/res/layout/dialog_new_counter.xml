@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- dialog_new_counter.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/editTextCounterName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Counter Name" />
+
+    <EditText
+        android:id="@+id/editTextCounterValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Counter Value" />
+
+    <Button
+        android:id="@+id/buttonSubmit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Submit" />
+
+</LinearLayout>
+
