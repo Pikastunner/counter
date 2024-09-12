@@ -1,6 +1,7 @@
 package com.example.counter
 
 import android.content.Context
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
@@ -13,6 +14,7 @@ import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.graphics.Color
 import android.graphics.Typeface
+import android.os.PersistableBundle
 import android.text.Spannable
 import androidx.core.content.ContextCompat
 import android.text.style.StyleSpan
@@ -60,6 +62,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 }
 
+class SettingsActivity: AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        supportFragmentManager
+            .beginTransaction()
+            .replace(android.R.id.content, SettingsFragment())
+            .commit()
+    }
+}
+
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -86,47 +99,64 @@ class MainActivity : AppCompatActivity() {
         editor.apply()
     }*/
 
-    private val counterItems: MutableList<Pair<String, Int>> = mutableListOf()
-    private var lastClickedCounter: Pair<String, Int> ?= null
+    private val counterItems: MutableList<Counter> = mutableListOf()
+    private var lastClickedCounter: Int ?= null
 
-    private fun saveLastClickedCounter(menuItem: MenuItem) {
+//    private fun saveLastClickedCounter(counter: Counter) {
+//        val sharedPreferences = getSharedPreferences("CounterItems", MODE_PRIVATE)
+//        val gson = Gson()
+////        val clickedTitle = menuItem.title.toString()
+////        val pattern = "(\\w+) \\((\\d+)\\)".toRegex()
+////        val matchResult = pattern.find(clickedTitle)
+////        val counterName = matchResult?.groupValues?.get(1)
+////        matchResult?.groupValues?.forEachIndexed { index, value ->
+////            Log.d("fdoijfdoij", "DEBUG LINE 61 $index: $value")
+////        }
+////        val counterValue = matchResult?.groupValues?.get(2)?.toIntOrNull()
+////        Log.d("fdoijfdoij", "STRING AND VALUE $counterName $counterValue")
+//        val lastClickedCounterJson = gson.toJson(counter)
+//        val editor = sharedPreferences.edit()
+//        editor.putString("lastClickedCounter", lastClickedCounterJson)
+//        editor.apply()
+//    }
+
+    private fun saveLastClickedCounter(counter: Counter) {
         val sharedPreferences = getSharedPreferences("CounterItems", MODE_PRIVATE)
-        val gson = Gson()
-        val clickedTitle = menuItem.title.toString()
-        val pattern = "(\\w+) \\((\\d+)\\)".toRegex()
-        val matchResult = pattern.find(clickedTitle)
-        val counterName = matchResult?.groupValues?.get(1)
-        matchResult?.groupValues?.forEachIndexed { index, value ->
-            Log.d("fdoijfdoij", "DEBUG LINE 61 $index: $value")
-        }
-        val counterValue = matchResult?.groupValues?.get(2)?.toIntOrNull()
-        Log.d("fdoijfdoij", "STRING AND VALUE $counterName $counterValue")
-        val lastClickedCounterJson = gson.toJson(Pair(counterName, counterValue))
         val editor = sharedPreferences.edit()
-        editor.putString("lastClickedCounter", lastClickedCounterJson)
+        Log.i("fjdiosjf", "FUCKING COUNTER ID" + counter)
+        editor.putInt("lastClickedCounterID", counter.counterID)
         editor.apply()
     }
 
     private fun loadLastClickedCounter() {
         val sharedPreferences = getSharedPreferences("CounterItems", MODE_PRIVATE)
-        val lastClickedCounterJson = sharedPreferences.getString("lastClickedCounter", null)
-        val gson = Gson()
-        lastClickedCounter = if (lastClickedCounterJson != null) {
-            gson.fromJson(lastClickedCounterJson, object: TypeToken<Pair<String, Int>?>() {}.type)
+        val savedCounterID = sharedPreferences.getInt("lastClickedCounterID", -1)
+
+        // If there's a saved ID, find the corresponding Counter object
+        lastClickedCounter = if (savedCounterID != -1) {
+            val counter = counterItems.find { it.counterID == savedCounterID }
+            lastClickedCounter = counter!!.counterID
+            savedCounterID
         } else {
-            null
+            // Set a default if no saved ID found
+            lastClickedCounter = counterItems.first()!!.counterID
+            lastClickedCounter
         }
+
+        Log.d("Loaded Counter", "Counter loaded: $lastClickedCounter")
     }
 
-    private fun updateCounterItems(counterName: String) {
+    private fun updateCounterItems(counterID: Int) {
         val existingCounterItem = counterItems.find {
-            it.first == counterName
+            it.counterID == counterID
         }
         if (existingCounterItem != null) {
-            counterItems.remove(existingCounterItem)
-            counterItems.add(counterName to mCounter)
+//            counterItems.remove(existingCounterItem)
+//            counterItems.add(counterName to mCounter)
+            existingCounterItem.counterValue = mCounter
         }
         saveCounterItems(counterItems)
+
         Log.d("", "Line 92 $counterItems")
     }
 
@@ -134,7 +164,7 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("CounterItems", MODE_PRIVATE)
         val counterItemsJson = sharedPreferences.getString("counterItems", null)
         val gson = Gson()
-        val counterItemsType = object : TypeToken<MutableList<Pair<String, Int>>>() {}.type
+        val counterItemsType = object : TypeToken<List<Counter>>() {}.type
 
 
         /*val counterItems = if (counterItemsJson != null) {
@@ -146,8 +176,12 @@ class MainActivity : AppCompatActivity() {
         counterItems.clear() // Clear the existing items in the list
 
         if (counterItemsJson != null) {
-            val loadedItems = gson.fromJson<MutableList<Pair<String, Int>>>(counterItemsJson, counterItemsType)
+            val loadedItems = gson.fromJson<List<Counter>>(counterItemsJson, counterItemsType)
             counterItems.addAll(loadedItems) // Add the loaded items to the list
+        }
+        else {
+            val counterId = System.currentTimeMillis().toInt()
+            counterItems.add(Counter("First Counter", counterId, 0))
         }
         //return counterItems
         /*
@@ -164,17 +198,19 @@ class MainActivity : AppCompatActivity() {
         }*/
     }
 
-    private fun createNewItem(counterName: String, counterValue: Int, navigationView: NavigationView, counterItems: MutableList<Pair<String, Int>>) {
+    private fun createNewItem(counterName: String, counterValue: Int, navigationView: NavigationView, counterItems: MutableList<Counter>) {
         //val counterItems = mutableListOf<String>()
-        counterItems.add(counterName to counterValue)
+        val counterId = System.currentTimeMillis().toInt()
+        counterItems.add(Counter(counterName, counterId, counterValue))
         val counterValueVar = AtomicInteger(counterValue)
         //val navigationView = findViewById<NavigationView>(R.id.navigation_view)
         val menu = navigationView.menu
-        val newCounterID = View.generateViewId()
+        //val newCounterID = View.generateViewId()
 
-        val menuItem = menu.add(R.id.group_counters, newCounterID, Menu.NONE, counterName).apply {
+        val menuItem = menu.add(R.id.group_counters, counterId, Menu.NONE, counterName).apply {
             isCheckable = true
-            title = "$counterName ($counterValue)"
+//            title = "$counterName ($counterValue)"
+            title = counterName
         }
 
         //val newCounterItem = menu.findItem(newCounterID)
@@ -186,27 +222,38 @@ class MainActivity : AppCompatActivity() {
 
             val ncounterValue: Int
             val existingCounterItem = counterItems.find {
-                it.first == counterName
+                it.counterID == menuItem.itemId
             }
             if (existingCounterItem != null) {
-                ncounterValue = existingCounterItem.second
+                ncounterValue = existingCounterItem.counterValue
             }
             else {
                 ncounterValue = counterValue
             }
 
-            lastClickedCounter = counterName to ncounterValue
+            if (existingCounterItem != null) {
+                lastClickedCounter = existingCounterItem.counterID
+            }//counterName to ncounterValue
             Log.d("Clicked", "line 148 BLAH BLAH MenuItem: $MenuItem")
             setTitle("$counterName")
             mCounter = ncounterValue
             txv.text = mCounter.toString()
             Log.d("clicked_shit", "Changed value: $counterValue")
-            saveLastClickedCounter(MenuItem)
+            if (existingCounterItem != null) {
+                saveLastClickedCounter(existingCounterItem)
+            }
             true
         }
     }
 
-    private fun saveCounterItems(counterItems: MutableList<Pair<String, Int>>) {
+
+    data class Counter(
+        val counterName: String,
+        val counterID: Int,
+        var counterValue: Int,
+    )
+
+    private fun saveCounterItems(counterItems: MutableList<Counter>) {
         val sharedPreferences = getSharedPreferences("CounterItems", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         val gson = Gson()
@@ -217,11 +264,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        if (isSettingsPage) {
-            menuInflater.inflate(R.menu.settings_menu, menu)
-        }
-        else {
-            menuInflater.inflate(R.menu.action_buttons, menu)}
+//        if (isSettingsPage) {
+////            menuInflater.inflate(R.menu.settings_menu, menu)
+//        }
+//        else {
+        menuInflater.inflate(R.menu.action_buttons, menu)
         return true
     }
 
@@ -242,11 +289,7 @@ class MainActivity : AppCompatActivity() {
         }
         val fragmentListLen = fragmentList.size
         Log.d("", "Line 226 $fragmentListLen")
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null)
-            .commit()
-
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -260,7 +303,7 @@ class MainActivity : AppCompatActivity() {
         minus_btn = findViewById(R.id.minus)
         reset = findViewById(R.id.reset)
 
-        sharedPreferences = getSharedPreferences("CounterPrefs", MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences("CounterItems", MODE_PRIVATE)
         txv = findViewById(R.id.num)
         drawerLayout = findViewById(R.id.my_drawer_layout)
 
@@ -290,10 +333,17 @@ class MainActivity : AppCompatActivity() {
 
         loadCounterItems()
         loadLastClickedCounter()
-        val defaultCounter = lastClickedCounter ?: counterItems.firstOrNull()
-        val counterName = defaultCounter!!.first
-        setTitle("$counterName")
-        Log.i("a", "LAST CLICKED $defaultCounter")
+
+
+        val defaultCounter = counterItems.find { it.counterID == lastClickedCounter }
+        val counterName = defaultCounter!!.counterName
+        mCounter = defaultCounter.counterValue
+        txv.text = mCounter.toString()
+
+
+        title = "$counterName"
+        Log.i("a", "LAST CLICKED  iufhdsiuhfiudhs $defaultCounter")
+        Log.d("ALL ", "hello" + counterItems.toString())
         // UN-COMMENT THIS
         /*if (defaultCounter != null) {
             val defaultMenuItem = navMenu.findItem(defaultCounter.first.hashCode())
@@ -304,25 +354,27 @@ class MainActivity : AppCompatActivity() {
 
         Log.i("HELLLO", "BEFORE FUNCTION")
         Log.d("Counter", "counterItems: $counterItems")
-        counterItems.forEach { (counterName, counterValue) ->
-            val newCounterId = View.generateViewId()
+        counterItems.forEach { counter ->
+            val newCounterId = counter.counterID//View.generateViewId()
             Log.d("", "line 223 $newCounterId")
-            navMenu.add(R.id.group_counters, newCounterId, Menu.NONE, "$counterName ($counterValue)")
+            navMenu.add(R.id.group_counters, newCounterId, Menu.NONE, counter.counterName)
                 .setCheckable(true)
                 .setOnMenuItemClickListener { MenuItem ->
                     val ncounterValue: Int
                     val existingCounterItem = counterItems.find {
-                        it.first == counterName
+                        it.counterID == MenuItem.itemId
                     }
-                    if (existingCounterItem != null) {
-                        ncounterValue = existingCounterItem.second
-                    }
-                    else {
-                        ncounterValue = counterValue
-                    }
+//                    if (existingCounterItem != null) {
+//                        ncounterValue = existingCounterItem.counterValue
+//                    }
+//                    else {
+//                        ncounterValue = counter.counterValue
+//                    }
+                    ncounterValue = existingCounterItem!!.counterValue
                     setTitle("$counterName")
                     mCounter = ncounterValue
                     txv.text = mCounter.toString()
+                    title = existingCounterItem.counterName
 
                     /*Log.d("Clicked", "BLAH BLAH MenuItem: $MenuItem")
                     val clickedTitle = MenuItem.title.toString()
@@ -334,7 +386,7 @@ class MainActivity : AppCompatActivity() {
                         txv.text = mCounter.toString()
                     }
                     Log.d("clicked_shit", "Changed value: $value")*/
-                    saveLastClickedCounter(MenuItem)
+                    saveLastClickedCounter(existingCounterItem)
                     true
                 }
         }
@@ -387,37 +439,37 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
+        lastClickedCounter?.let { counter ->
+            val defaultMenuItem = navMenu.findItem(counter)
+            defaultMenuItem?.isChecked = true
+        }
 
         txv.setOnClickListener {
+            Log.d("w", "WHAT IS MCOUNTER" + mCounter)
             mCounter++
             txv.text = mCounter.toString()
-            loadLastClickedCounter()
-            val counterName = lastClickedCounter!!.first
-            updateCounterItems(counterName)
+//            loadLastClickedCounter()
+            lastClickedCounter?.let { it1 -> updateCounterItems(it1) }
         }
 
         add_btn.setOnClickListener {
             mCounter++
             txv.text = mCounter.toString()
-            loadLastClickedCounter()
-            val counterName = lastClickedCounter!!.first
-            updateCounterItems(counterName)
+//            loadLastClickedCounter()
+            lastClickedCounter?.let { it1 -> updateCounterItems(it1) }
         }
         minus_btn.setOnClickListener {
             mCounter--
             txv.text = mCounter.toString()
-            loadLastClickedCounter()
-            val counterName = lastClickedCounter!!.first
-            updateCounterItems(counterName)
+//            loadLastClickedCounter()
+            lastClickedCounter?.let { it1 -> updateCounterItems(it1) }
         }
         reset.setOnClickListener {
             mCounter = 0
             txv.text = mCounter.toString()
-            loadLastClickedCounter()
-            val counterName = lastClickedCounter!!.first
-            updateCounterItems(counterName)
+//            loadLastClickedCounter()
+            lastClickedCounter?.let { it1 -> updateCounterItems(it1) }
         }
-        txv.text = mCounter.toString()
 
 
         // Get the menu item's title as a SpannableString
@@ -436,18 +488,91 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun updateUIAfterDeletion(prev: Counter) {
+
+        val lastClickedCounterObj = counterItems.find{it.counterID == lastClickedCounter}
+        if (lastClickedCounterObj != null) {
+            title = lastClickedCounterObj.counterName
+        }
+        if (lastClickedCounterObj != null) {
+            txv.text = lastClickedCounterObj.counterValue.toString()
+        }
+
+
+        val navigationView = findViewById<NavigationView>(R.id.navigation_view)
+
+        // Find the corresponding MenuItem based on the counter ID
+        val menu = navigationView.menu
+
+        // Find the MenuItem with the same counterID (use View.generateViewId for unique ID)
+        val menuItemToRemove = menu.findItem(prev.counterID)
+
+        // Remove the MenuItem from the menu
+        if (menuItemToRemove != null) {
+            menu.removeItem(menuItemToRemove.itemId)
+        }
+
+
+        Log.d("UI Update", "Deleted Counter: ${prev.counterName}")
+
+        lastClickedCounter?.let { counter ->
+            val defaultMenuItem = menu.findItem(counter)
+            defaultMenuItem?.isChecked = true
+        }
+
+    }
+
+
     private fun showDeleteConfirmationDialog() {
         AlertDialog.Builder(this)
             .setTitle("Confirm Delete")
             .setMessage("Do you want to delete the current counter?")
             .setPositiveButton("Delete") { dialog, _ ->
+
+                val length = counterItems.size
+                if (length != 1) {
+                    val prevClickedCounter = counterItems.find { it.counterID == lastClickedCounter }
+                    Log.d("hello", prevClickedCounter.toString())
+
+//                    val index = counterItems.indexOf(lastClickedCounter).let { if (it == 0) 0 else it - 1 }
+
+                    val index = counterItems.indexOfFirst { it.counterID == lastClickedCounter }.let { if (it == 0) 0 else it - 1 }
+
+                    Log.d("index value", "Index value of new value" + index.toString())
+                    Log.d("counteritems", "The entire list before deleting" + counterItems.toString())
+//                    counterItems.remove(lastClickedCounter)
+                    counterItems.removeIf { it.counterID == lastClickedCounter }
+                    saveCounterItems(counterItems)
+
+                    Log.d("counteritems", "The entire list after deleting" + counterItems.toString())
+
+                    lastClickedCounter = counterItems[index].counterID
+                    saveLastClickedCounter(counterItems[index])
+                    mCounter = counterItems[index].counterValue
+
+                    if (prevClickedCounter != null) {
+                        updateUIAfterDeletion(prevClickedCounter)
+                    }
+
+                }
+                else {
+                    AlertDialog.Builder(this)
+                        .setTitle("Cannot Delete")
+                        .setMessage("You cannot delete the last remaining item.")
+                        .setPositiveButton("OK") { innerDialog, _ ->
+                            innerDialog.dismiss()
+                        }
+                        .show()
+                }
                 dialog.dismiss()
+
             }
             .setNegativeButton("Cancel") { dialog, _  ->
                 dialog.dismiss()
             }
             .show()
     }
+
 
     private fun showEditConfirmationDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_counter, null)
@@ -469,8 +594,8 @@ class MainActivity : AppCompatActivity() {
             mCounter = counterValue
             txv.text = mCounter.toString()
             loadLastClickedCounter()
-            val counterName = lastClickedCounter!!.first
-            updateCounterItems(counterName)
+            val counterId = lastClickedCounter!!
+            updateCounterItems(counterId)
             // Dismiss the dialog
             dialog.dismiss()
         }
@@ -500,7 +625,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mCounter = mCounter
+        saveCounterItems(counterItems)
+        saveLastClickedCounter(counterItems.find { it.counterID == lastClickedCounter }!!)
     }
 }
 
