@@ -1,53 +1,87 @@
-# Kotlin Counter App
+# Kotlin Counter App v1.1
 
-This Kotlin Counter App allows users to create multiple counters, increment, decrement, reset, and delete them. Designed for simplicity and ease of use, this app provides a user-friendly experience to manage multiple counters.
+The Kotlin Counter App has been updated to version **1.1**, introducing **widget functionality** to enhance the user experience. This update allows users to interact with their counters directly from their device's home screen. The core functionality of the app remains intact, with the addition of a responsive and user-friendly widget.
+
+---
+
+## New Features in v1.1
+
+### **Widget Functionality**
+
+- **Home Screen Widget**:
+  - Users can add a widget to their home screen that displays a selected counter.
+  - The widget shows the counter's name and value in real-time.
+
+- **Widget Actions**:
+  - **Increment Button**: Increment the counter value directly from the widget.
+  - **Decrement Button**: Decrease the counter value from the widget.
+  - **Cycle Counters**: Use navigation buttons to switch between different counters linked to the widget.
+
+- **Customizable**:
+  - Users can select which counter to display in the widget.
+  - The widget updates automatically when counter values are modified in the app.
+
+---
 
 ## Features
 
-- **Create New Counter**: Users can create multiple counters, each with a unique name and value.
-- **Increment Counter**: Increase the value of a selected counter by one.
-- **Decrement Counter**: Decrease the value of a selected counter by one.
-- **Reset Counter**: Reset the value of the selected counter to zero.
-- **Delete Counter**: Remove a counter from the list (except when only one counter remains).
-- **Persistent Storage**: All counters and their values are saved using `SharedPreferences`.
-- **Navigation Drawer**: Access the list of counters, create new ones, and navigate to the settings.
+- **Core App Features** (unchanged from v1.0):
+  - Create, increment, decrement, reset, and delete counters.
+  - Persistent storage using `SharedPreferences`.
+  - Navigation drawer for managing counters and accessing settings.
 
-## Implementation
+- **New Widget Features** (v1.1):
+  - A responsive home screen widget.
+  - Widget-specific actions like increment, decrement, and counter cycling.
+  - Seamless synchronization with the app's counters.
 
-### MainActivity.kt
+---
 
-The `MainActivity.kt` file contains the primary logic for managing counters. Key components include:
+## Implementation Details
 
-- **Buttons**: 
-  - `addBtn`: Increments the counter value.
-  - `minusBtn`: Decrements the counter value.
-  - `resetBtn`: Resets the counter value to zero.
-  - **Delete Functionality**: Users can now delete a counter through a confirmation dialog.
-  
-- **TextView**: Displays the current value of the selected counter.
-- **SharedPreferences**: Saves and retrieves counter values and lists persistently.
-- **Navigation Drawer**: Allows navigation between multiple counters and includes a settings option.
+### Widget Provider (`CounterWidgetProvider.kt`)
 
-### SettingsFragment.kt
+- The `CounterWidgetProvider` class extends `AppWidgetProvider` and handles widget updates and user interactions.
+- Key functionalities include:
+  - **Update Widget**: Dynamically updates the counter name and value displayed on the widget.
+  - **Handle Actions**: Listens for user interactions (e.g., increment, decrement, or switching counters) and updates the widget accordingly.
 
-The `SettingsFragment.kt` defines a customizable settings screen where users can adjust preferences related to the app's functionality.
+### Widget Layout (`res/layout/widget_layout.xml`)
 
-## New Feature: Delete Counter
+- The widget layout includes:
+  - TextView to display the counter name and value.
+  - Buttons for incrementing, decrementing, and switching counters.
 
-- Users can delete a counter by selecting the "Delete" option from the confirmation dialog. This action removes the counter from the list. If the counter list contains only one item, deletion is prevented to ensure there is always at least one counter available.
+### Integration with MainActivity
+
+- **Broadcast Intents**:
+  - The widget communicates with the main app using broadcast intents.
+  - When the user interacts with the widget, the app processes the action and updates the widget's state.
+
+---
 
 ## Usage
 
-1. **Create a New Counter**: Use the navigation drawer to create and name a new counter.
-2. **Increment**: Tap the "+" button to increase the counter value.
-3. **Decrement**: Tap the "-" button to decrease the counter value.
-4. **Reset**: Tap the "Reset" button to reset the counter value to zero.
-5. **Delete**: Tap the "Delete" button from the menu to remove the current counter (this option is disabled if only one counter remains).
-6. **Settings**: Customize app preferences via the settings screen.
+1. **Add Widget to Home Screen**:
+  - Long-press on the home screen, select "Widgets," and add the Counter Widget.
+
+2. **Select Counter for Widget**:
+  - When adding the widget, select the counter to display from the list.
+
+3. **Interact with Widget**:
+  - Use the "+" and "-" buttons to modify the counter value.
+  - Cycle through available counters using the navigation buttons.
+
+4. **Update Counters in App**:
+  - Changes made via the widget are reflected in the app, and vice versa.
+
+---
 
 ## Contributing
 
-Contributions are welcome! If you have suggestions, improvements, or bug fixes, feel free to open an issue or submit a pull request.
+Contributions are welcome! If you have ideas for further improvements or encounter any issues, feel free to open a pull request or issue.
+
+---
 
 ## License
 

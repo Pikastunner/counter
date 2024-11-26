@@ -84,7 +84,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     lateinit var drawerLayout: DrawerLayout
     lateinit var actionBarDrawerToggle: ActionBarDrawerToggle
-    private var isSettingsPage: Boolean = false
 
 
 
@@ -156,6 +155,14 @@ class MainActivity : AppCompatActivity() {
             existingCounterItem.counterValue = mCounter
         }
         saveCounterItems(counterItems)
+
+        val updateAction = "com.example.counter.UPDATE_ACTION"
+
+        val updateWidgetsIntent = Intent(applicationContext, CounterWidgetProvider::class.java).apply {
+            action = updateAction
+            putExtra("counterId", counterID)
+        }
+        applicationContext.sendBroadcast(updateWidgetsIntent)
 
         Log.d("", "Line 92 $counterItems")
     }
@@ -620,6 +627,24 @@ class MainActivity : AppCompatActivity() {
                     true
                 } else super.onOptionsItemSelected(item)
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent?.action == "com.example.counter.UPDATE_ACTION") {
+            val counterId = intent.getIntExtra("counterId", -1)
+            if (counterId != -1) {
+                // Handle the intent, e.g., update UI or perform logic
+                val existingCounterItem = counterItems.find {
+                    it.counterID == counterId
+                }
+                if (existingCounterItem != null) {
+                    existingCounterItem.counterValue = mCounter
+                }
+                saveCounterItems(counterItems)
+            }
+
         }
     }
 
