@@ -4,6 +4,7 @@
     android:minWidth="300dp"
     android:minHeight="110dp"
     android:resizeMode="vertical|horizontal"
+    android:previewImage="@drawable/widget_preview_rounded_radius"
     android:minResizeWidth="150dp"
     android:minResizeHeight="75dp"
     android:updatePeriodMillis="0"
