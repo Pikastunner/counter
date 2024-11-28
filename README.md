@@ -1,6 +1,6 @@
-# Kotlin Counter App v1.1
+# Counter App v1.1
 
-The Kotlin Counter App has been updated to version **1.1**, introducing **widget functionality** to enhance the user experience. This update allows users to interact with their counters directly from their device's home screen. The core functionality of the app remains intact, with the addition of a responsive and user-friendly widget.
+The Counter App has been updated to version **1.1**, introducing **widget functionality** to enhance the user experience. This update allows users to interact with their counters directly from their device's home screen. The core functionality of the app remains intact, with the addition of a responsive and user-friendly widget.
 
 ---
 
